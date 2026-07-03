@@ -91,7 +91,7 @@ export default function MetricCard({
               isPositive ? "text-teal-600" : "text-rose-600"
             }`}
           >
-            {isPositive ? "+" : "-"} {change} {isPositive ? "increase" : "decrease"}
+            {isPositive ? "+" : "-"}{change.replace(/^[+-]\s*/, "")} {isPositive ? "increase" : "decrease"}
           </span>
         )}
         <span className="text-slate-400 text-[11px]">
