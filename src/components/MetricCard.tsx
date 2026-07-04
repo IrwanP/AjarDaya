@@ -85,15 +85,26 @@ export default function MetricCard({
       </div>
 
       <div className="mt-3 flex items-center justify-between text-xs">
-        {change && (
-          <span
-            className={`font-semibold rounded-full flex items-center gap-0.5 ${
-              isPositive ? "text-teal-600" : "text-rose-600"
-            }`}
-          >
-            {isPositive ? "+" : "-"}{change.replace(/^[+-]\s*/, "")} {isPositive ? "increase" : "decrease"}
-          </span>
-        )}
+        {change && (() => {
+          const cleanChange = change.replace(/^[+-]\s*/, "").trim();
+          const numericVal = parseFloat(cleanChange);
+          if (numericVal === 0) {
+            return (
+              <span className="font-semibold text-slate-500 rounded-full">
+                0% stable
+              </span>
+            );
+          }
+          return (
+            <span
+              className={`font-semibold rounded-full flex items-center gap-0.5 ${
+                isPositive ? "text-teal-600" : "text-rose-600"
+              }`}
+            >
+              {isPositive ? "+" : "-"}{cleanChange} {isPositive ? "increase" : "decrease"}
+            </span>
+          );
+        })()}
         <span className="text-slate-400 text-[11px]">
           {subtitle || "this month"}
         </span>

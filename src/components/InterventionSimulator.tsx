@@ -42,6 +42,16 @@ export default function InterventionSimulator({
     const sortedIds = [...selectedIds].sort().join(",");
     const cacheKey = `intervention:${sortedIds}:${targetGroup}:${duration}`;
 
+    if (isDemoActive || !hasApiKey) {
+      setLoading(true);
+      setLoadingText("Running AI Impact Simulation...");
+      setQuotaStatus("fallback");
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      setLoading(false);
+      setLastSimulated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      return;
+    }
+
     if (hasGeminiCache(cacheKey)) {
       setSimulationResult(getGeminiCache(cacheKey));
       setQuotaStatus("cached");
@@ -96,40 +106,152 @@ export default function InterventionSimulator({
   };
 
   // Immediate local feedback calculation
-  const getSimulatedGainAndLift = () => {
-    let baseGain = 0;
-    let baseEngagement = 0;
-    let baseCostRatio = 0;
+  const getDynamicSimulation = (
+    ids: string[],
+    targetGroup: string,
+    duration: string
+  ) => {
+    if (ids.length === 0) {
+      return {
+        gain: "+0%",
+        engagement: "+0%",
+        equity: "Low Impact",
+        costEfficiency: "N/A",
+        summary: "Please select educational intervention programs from the panel to simulate their compound effects on learning, engagement, and equity.",
+        priority: "Select at least one program. We highly recommend pairing 'Community Mentoring Circles' and 'Offline Learning Resources' to address top mentorship and digital-access bottlenecks.",
+        risk: "Risk warning: No intervention programs are active. Under-supported learners face cumulative learning loss, and overstretched mentors lack coordination tools.",
+        sentiment: "“We are eager to support our children, but without structured materials or circles, it's hard to make progress.” — Community Representative"
+      };
+    }
 
-    selectedIds.forEach((id) => {
-      const entry = INTERVENTIONS.find((int) => int.id === id);
-      if (entry) {
-        baseGain += entry.estimatedGain;
-        baseEngagement += entry.estimatedEngagement;
-        baseCostRatio += 1;
-      }
-    });
+    // Find detailed info for selections
+    const selectedDetails = ids.map(id => INTERVENTIONS.find(item => item.id === id)).filter(Boolean) as any[];
+
+    // Sum estimated values
+    let sumGain = selectedDetails.reduce((sum, item) => sum + item.estimatedGain, 0);
+    let sumEngagement = selectedDetails.reduce((sum, item) => sum + item.estimatedEngagement, 0);
 
     // Diminishing returns scaling factor
-    const scalar = selectedIds.length > 1 ? 0.85 : 1.0;
-    const finalGain = Math.round(baseGain * scalar);
-    const finalEngagement = Math.round(baseEngagement * scalar);
+    let scalar = 1.0;
+    if (ids.length === 2) scalar = 0.85;
+    else if (ids.length === 3) scalar = 0.75;
+    else if (ids.length >= 4) scalar = 0.65;
+
+    let finalGain = Math.round(sumGain * scalar);
+    let finalEngagement = Math.round(sumEngagement * scalar);
+
+    // Caps
+    if (finalGain > 45) finalGain = 45;
+    if (finalEngagement > 55) finalEngagement = 55;
+
+    const gainStr = `+${finalGain}%`;
+    const engagementStr = `+${finalEngagement}%`;
+
+    // Equity
+    let equity = "Medium Impact";
+    if (ids.includes("offline_resources") || ids.includes("digital_kits")) {
+      equity = "High Impact";
+    }
+    if (ids.includes("offline_resources") && ids.includes("mentoring_circles")) {
+      equity = "Exceptional";
+    }
+
+    // Cost Efficiency
+    let costEfficiency = "High";
+    if (ids.length === 2) {
+      if (ids.includes("offline_resources") && ids.includes("mentoring_circles")) {
+        costEfficiency = "Highly Optimized";
+      } else {
+        costEfficiency = "Very High";
+      }
+    } else if (ids.length === 3) {
+      costEfficiency = "Moderate (Slightly Diluted)";
+    } else if (ids.length >= 4) {
+      costEfficiency = "Low (Coordination Heavy)";
+    } else {
+      costEfficiency = "Optimal (High Volume)";
+    }
+
+    // Specific check for the primary demo combination (Community Mentoring Circles + Offline Learning Resources)
+    const isOptimalCombo = ids.includes("mentoring_circles") && ids.includes("offline_resources");
+
+    let summary = "";
+    let priority = "";
+    let risk = "";
+    let sentiment = "";
+
+    if (ids.length === 1) {
+      const item = selectedDetails[0];
+      let focusGap = "";
+      if (item.id === "mentoring_circles") focusGap = "mentorship constraints";
+      else if (item.id === "offline_resources") focusGap = "physical access to learning materials";
+      else if (item.id === "digital_kits") focusGap = "digital access constraints";
+      else if (item.id === "after_school") focusGap = "critical academic gaps";
+      else if (item.id === "teacher_coaching") focusGap = "pedagogical capacity";
+      else focusGap = "home support environments";
+
+      summary = `Single-program simulation shows focused but limited impact. Implementing only '${item.name}' addresses ${focusGap}, but leaves other major bottlenecks unresolved. For instance, without pairing structured materials with mentor guidance, the compound effectiveness is constrained.`;
+      priority = `Highly recommend adding a complementary intervention. For ${targetGroup} over a ${duration} horizon, pairing personal mentorship with physical offline materials unlocks 2x higher compound gains.`;
+      risk = `Moderate risk of low adoption: Deploying '${item.name}' as a standalone solution risks low student follow-through if other blockers (like device access or tutor availability) are neglected.`;
+      sentiment = `“Having '${item.name}' helps, but we really need a second component to solve our biggest day-to-day learning challenges.” — Community Volunteer`;
+    } else if (ids.length === 2) {
+      if (isOptimalCombo) {
+        summary = "Simulating combinations for East Java Cluster shows that combining 'Offline Learning Resources' and 'Community Mentoring Circles' is highly optimal. Offline resources directly resolve the 82% Digital Access Gap for learners like Ayu and Dinda, while Mentoring Circles resolve the 75% Mentor Availability Gap, relieving Kak Nisa's overextension.";
+        priority = "Recommended Primary Intervention Mix: 'Community Mentoring Circles' & 'Offline Learning Resources'. This intervention mix directly coordinates structured mentorship for Ayu Lestari, Rafi Pratama, Dinda Rahmawati, and Yosep Wenda, immediately boosting student engagement by 45%.";
+        risk = "Minor risk: Local community figures might prefer physical over digital delivery due to power instability. Mitigation: Bundled physical reading guide kits as secondary fallback, minimizing disruption.";
+        sentiment = "“Having the physical offline study kits lets me direct students’ group work with absolute certainty, even when cell signals drop out completely in our village.” — Kak Nisa, Mentor";
+      } else {
+        const names = selectedDetails.map(d => `'${d.name}'`).join(" and ");
+        summary = `Combining ${names} creates a strong dual-pillar support. This addresses two critical education dimensions for ${targetGroup} over a ${duration} period, but may have slightly less alignment than the primary mentoring/materials combo.`;
+        priority = `A strong secondary program combination. Ensure that localized mentors and materials are fully aligned to deliver both initiatives cohesively.`;
+        risk = `Low to Moderate risk: Possible overlapping logistics and minor volunteer fatigue. Ensure clear program division and communication.`;
+        sentiment = `“The combination of these two programs helps us support more aspects of learning, but let's make sure the rollout schedule is simple.” — Local Coordinator`;
+      }
+    } else if (ids.length === 3) {
+      summary = `A three-program mix provides broader coverage and slightly higher potential reach for ${targetGroup}, but introduces moderate resource dilution and higher coordination complexity. While learning gains remain high at ${gainStr}, local mentors might experience coordination fatigue.`;
+      priority = `Ensure strict operational guidelines. To prevent volunteer fatigue over this ${duration} rollout, consider rotating mentors or onboarding additional support staff.`;
+      risk = `Moderate risk: High coordination burden across three distinct program logistics. Mentor fatigue could lead to irregular circle delivery.`;
+      sentiment = `“The extra programs are amazing, but it is becoming a lot of administrative work to manage as a single volunteer coordinator.” — Community Mentor`;
+    } else {
+      summary = `Maximum coverage, but reduced cost efficiency due to extreme resource dilution, heavy coordination burden, and implementation complexity. Trying to deploy four or more interventions simultaneously overstretches community infrastructure for ${targetGroup}.`;
+      priority = `Strongly advise scaling back. Prioritize the 2 most critical interventions ('Community Mentoring Circles' + 'Offline Learning Resources') to preserve quality and volunteer energy.`;
+      risk = `Critical risk: Severe resource dilution and logistical bottlenecks. Volunteer dropout and inconsistent program quality are highly likely.`;
+      sentiment = `“We have too many programs running at once. We are spending more time on coordination than on actually teaching the kids.” — Local Coordinator`;
+    }
+
+    // Refine with specific responsive details:
+    if (ids.includes("mentoring_circles")) {
+      priority += " Mentoring circles add a critical human layer, ensuring students receive peer and mentor follow-up.";
+    }
+    if (ids.includes("offline_resources")) {
+      summary += " Distributed physical kits bypass local network and device accessibility bottlenecks.";
+    }
+    if (ids.includes("teacher_coaching")) {
+      risk += " Ensure local teacher training is contextualized to local dialects to guarantee adoption.";
+    }
+    if (ids.includes("parent_sessions")) {
+      sentiment += " Parental support has boosted student home motivation.";
+    }
 
     return {
-      gain: finalGain > 0 ? `+${finalGain}%` : "0%",
-      engagement: finalEngagement > 0 ? `+${finalEngagement}%` : "0%",
-      equity: selectedIds.some(id => id === "offline_resources" || id === "digital_kits") ? "High Impact" : "Medium Impact",
-      costEfficiency: selectedIds.length === 0 ? "N/A" : selectedIds.length > 3 ? "Optimal (High Volume)" : "Very High"
+      gain: gainStr,
+      engagement: engagementStr,
+      equity,
+      costEfficiency,
+      summary,
+      priority,
+      risk,
+      sentiment
     };
   };
 
-  const currentLocalProjection = getSimulatedGainAndLift();
+  const computed = getDynamicSimulation(selectedIds, targetGroup, duration);
 
-  const displayGain = isDemoActive ? "+32%" : (simulationResult?.learningGainLift || currentLocalProjection.gain);
-  const displayEngagement = isDemoActive ? "+45%" : (simulationResult?.engagementLift || currentLocalProjection.engagement);
-  const displayEquity = isDemoActive ? "Exceptional" : (simulationResult?.equityImpactScore || currentLocalProjection.equity);
-  const displayCost = isDemoActive ? "Highly Optimized" : (simulationResult?.costEfficiencyRating || currentLocalProjection.costEfficiency);
-  
+  const displayGain = (!isDemoActive && simulationResult?.learningGainLift) ? simulationResult.learningGainLift : computed.gain;
+  const displayEngagement = (!isDemoActive && simulationResult?.engagementLift) ? simulationResult.engagementLift : computed.engagement;
+  const displayEquity = (!isDemoActive && simulationResult?.equityImpactScore) ? simulationResult.equityImpactScore : computed.equity;
+  const displayCost = (!isDemoActive && simulationResult?.costEfficiencyRating) ? simulationResult.costEfficiencyRating : computed.costEfficiency;
+
   const getCostStyles = (val: string) => {
     const norm = val.toLowerCase();
     if (norm.includes("very high") || norm.includes("optimized") || norm.includes("optimal") || (norm.includes("high") && !norm.includes("medium") && !norm.includes("low"))) {
@@ -165,38 +287,35 @@ export default function InterventionSimulator({
   };
 
   const costStyles = getCostStyles(displayCost);
-  
-  const displaySummary = isDemoActive
-    ? "Simulating combinations for East Java Circle shows that while both 'Offline Study Kit Delivery' and 'Community Mentoring Circles' are highly beneficial, combining them is optimal. Offline kits directly resolve the 82% Digital Access Gap, while Mentoring Circles resolve the 75% Mentor Availability Gap."
-    : (simulationResult ? (
-        <div className="space-y-2">
-          {simulationResult.summary && <p>{simulationResult.summary}</p>}
-          {simulationResult.whyThisMixFits && <p><strong>Why this mix fits:</strong> {simulationResult.whyThisMixFits}</p>}
-          {simulationResult.supportGapsAddressed && Array.isArray(simulationResult.supportGapsAddressed) && (
-            <div>
-              <p className="font-semibold">Support Gaps Addressed:</p>
-              <ul className="list-disc pl-4 space-y-1 mt-0.5">
-                {simulationResult.supportGapsAddressed.map((gap: string, i: number) => (
-                  <li key={i}>{gap}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {simulationResult.expectedImpact && <p><strong>Expected Impact:</strong> {simulationResult.expectedImpact}</p>}
-        </div>
-      ) : (selectedIds.length > 0 
-        ? `Simulations indicate that combining these ${selectedIds.length} interventions will generate a highly significant multiplicative impact on ${targetGroup}.` 
-        : "Please select one or more intervention programs to project learning effectiveness."));
 
-  const displayPriority = isDemoActive
-    ? "Recommended Primary Intervention: 'Community Mentoring Circles'. This intervention directly coordinates structured mentorship for Ayu Lestari, Rafi Pratama, Dinda Rahmawati, and Yosep Wenda, immediately relieving the overextension of Kak Nisa and boosting student engagement by 45%."
-    : (simulationResult ? (
-        <div className="space-y-1.5 text-slate-700">
-          {simulationResult.recommendationPriority && <p>{simulationResult.recommendationPriority}</p>}
-          {simulationResult.tradeOffToReview && <p><strong className="text-amber-800">Trade-off to review:</strong> {simulationResult.tradeOffToReview}</p>}
-          {simulationResult.recommendedNextStep && <p><strong>Recommended next step:</strong> {simulationResult.recommendedNextStep}</p>}
+  const displaySummary = (!isDemoActive && simulationResult) ? (
+    <div className="space-y-2">
+      {simulationResult.summary && <p>{simulationResult.summary}</p>}
+      {simulationResult.whyThisMixFits && <p><strong>Why this mix fits:</strong> {simulationResult.whyThisMixFits}</p>}
+      {simulationResult.supportGapsAddressed && Array.isArray(simulationResult.supportGapsAddressed) && (
+        <div>
+          <p className="font-semibold">Support Gaps Addressed:</p>
+          <ul className="list-disc pl-4 space-y-1 mt-0.5">
+            {simulationResult.supportGapsAddressed.map((gap: string, i: number) => (
+              <li key={i}>{gap}</li>
+            ))}
+          </ul>
         </div>
-      ) : "The optimal combination for remote/rural learners is pairing 'Offline Learning Resources' with 'Community Mentoring Circles' (Kak Nisa) to ensure content is contextualized socially and sustainably.");
+      )}
+      {simulationResult.expectedImpact && <p><strong>Expected Impact:</strong> {simulationResult.expectedImpact}</p>}
+    </div>
+  ) : computed.summary;
+
+  const displayPriority = (!isDemoActive && simulationResult?.recommendationPriority) ? (
+    <div className="space-y-1.5 text-slate-700">
+      {simulationResult.recommendationPriority && <p>{simulationResult.recommendationPriority}</p>}
+      {simulationResult.tradeOffToReview && <p><strong className="text-amber-800">Trade-off to review:</strong> {simulationResult.tradeOffToReview}</p>}
+      {simulationResult.recommendedNextStep && <p><strong>Recommended next step:</strong> {simulationResult.recommendedNextStep}</p>}
+    </div>
+  ) : computed.priority;
+
+  const displayRisk = (!isDemoActive && simulationResult?.riskAnalysis) ? simulationResult.riskAnalysis : computed.risk;
+  const displaySentiment = (!isDemoActive && simulationResult?.mentorSentiment) ? simulationResult.mentorSentiment : computed.sentiment;
 
   return (
     <div id="intervention-simulator-container" className="space-y-6 text-left">
@@ -480,9 +599,7 @@ export default function InterventionSimulator({
                   <span className="text-[8px] bg-purple-100 text-purple-800 font-extrabold px-1 rounded">AI Mitigated</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                  {isDemoActive 
-                    ? "Minor risk: Local community figures in East Java circle might prefer physical over digital delivery due to power instability. Mitigation: Bundled physical reading guide kits as secondary fallback, minimizing disruption."
-                    : "Low to Moderate risk: Local mentors might face fatigue over multi-hour circles. Mitigation: Keep ratio to 1:15 max, with periodic rotating volunteer facilitators from regional universities."}
+                  {displayRisk}
                 </p>
               </div>
 
@@ -493,9 +610,7 @@ export default function InterventionSimulator({
                   <span className="text-[8px] bg-indigo-100 text-indigo-800 font-extrabold px-1 rounded">AI Simulated</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed italic">
-                  {isDemoActive
-                    ? '“Having the physical offline study kits lets me direct students’ group work with absolute certainty, even when cell signals drop out completely in our village.” — Kak Nisa, Mentor'
-                    : '“Combining interactive group mentoring circles with targeted reading materials has greatly reduced my prep work and kept students motivated.” — Community Facilitator'}
+                  {displaySentiment}
                 </p>
               </div>
             </div>
