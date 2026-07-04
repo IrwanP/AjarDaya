@@ -20,7 +20,8 @@ export function downloadActionBriefPdf(
   },
   isDemoActive: boolean,
   budget: string,
-  lastGenerated: string | null
+  lastGenerated: string | null,
+  generatedDate?: Date
 ) {
   const doc = new jsPDF({
     orientation: "portrait",
@@ -92,12 +93,24 @@ export function downloadActionBriefPdf(
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  const docNo = isDemoActive ? "AB-2026-JAVA-01" : "AD/CAB/2026/06-29";
+
+  const dateObj = generatedDate || new Date();
+  const monthStr = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const dayStr = String(dateObj.getDate()).padStart(2, "0");
+  const formattedDateString = dateObj.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+
+  const docNo = isDemoActive
+    ? `AB-2026-JAWA-${monthStr}-${dayStr}`
+    : `AD-CAB-2026-${monthStr}-${dayStr}`;
   const genTime = lastGenerated
     ? `Time: ${lastGenerated}`
-    : "Time: June 29, 2026";
+    : `Time: ${formattedDateString}`;
   doc.text(
-    `Document No: ${docNo}  |  Date: June 29, 2026  |  ${genTime}`,
+    `Document No: ${docNo}  |  Date: ${formattedDateString}  |  ${genTime}`,
     margin,
     y
   );
@@ -356,5 +369,5 @@ export function downloadActionBriefPdf(
     );
   }
 
-  doc.save("AjarDaya_Action_Brief_AB-2026-JAWA-01.pdf");
+  doc.save(`AjarDaya_Action_Brief_${docNo}.pdf`);
 }

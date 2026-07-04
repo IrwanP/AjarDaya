@@ -1,37 +1,20 @@
-# AjarDaya
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-**AI Decision Intelligence for Indonesian Community Learning Enablement**
+# Run and deploy your AI Studio app
 
-AjarDaya is a working hackathon prototype that helps NGOs, schools, mentors, and local stakeholders turn scattered learner and community signals into coordinated action.
+This contains everything you need to run your app locally.
 
-It supports community learning stakeholders in identifying at-risk learners, understanding support gaps, simulating interventions, planning resources, and generating stakeholder-ready action briefs.
+View your app in AI Studio: https://ai.studio/apps/fd9715e4-8629-4762-b941-55eef3539c69
 
----
+## Run Locally
 
-## Project Overview
+**Prerequisites:**  Node.js
 
-Community learning and mentorship initiatives often operate across many regions, schools, and local communities. However, the supporting data is usually scattered across reports, spreadsheets, field notes, and individual stakeholder knowledge.
 
-This makes it difficult to answer practical questions such as:
-
-- Which learners need support first?
-- What gaps are causing the highest risk?
-- Which interventions should be prioritized?
-- How should limited resources be allocated?
-- How can stakeholders align on a clear action plan?
-
-AjarDaya addresses this by providing an AI-assisted decision workflow that moves from community signals to coordinated action.
-
----
-
-## Core Workflow
-
-AjarDaya follows a structured decision-support journey:
-
-```text
-Community Signals
-→ Learner Risk
-→ Support Gaps
-→ Intervention Simulation
-→ Resource Allocation
-→ Community Action Brief
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

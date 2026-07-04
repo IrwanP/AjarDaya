@@ -37,6 +37,7 @@ export default function ActionBriefView({
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingText, setLoadingText] = useState<string>("Gemini is formulating custom action strategies...");
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+  const [generatedDate, setGeneratedDate] = useState<Date>(() => new Date());
 
   useEffect(() => {
     if (selectedBudget !== undefined) {
@@ -55,7 +56,9 @@ export default function ActionBriefView({
     if (hasGeminiCache(cacheKey)) {
       setBrief(getGeminiCache(cacheKey));
       setQuotaStatus("cached");
-      setLastGenerated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      const now = new Date();
+      setLastGenerated(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setGeneratedDate(now);
       return;
     }
 
@@ -83,6 +86,7 @@ export default function ActionBriefView({
       clearTimeout(timeoutId);
 
       const resData = await res.json();
+      const now = new Date();
       if (resData && resData.data) {
         setBrief(resData.data);
         setGeminiCache(cacheKey, resData.data);
@@ -94,12 +98,15 @@ export default function ActionBriefView({
       } else {
         setQuotaStatus("fallback");
       }
-      setLastGenerated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setLastGenerated(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setGeneratedDate(now);
     } catch (err) {
       clearTimeout(timeoutId);
       console.error("Error calling action brief API:", err);
       setQuotaStatus("fallback");
-      setLastGenerated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      const now = new Date();
+      setLastGenerated(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setGeneratedDate(now);
     } finally {
       setLoading(false);
     }
@@ -108,7 +115,9 @@ export default function ActionBriefView({
   useEffect(() => {
     // Only set time on load. DO NOT call fetchActionBrief() automatically!
     if (!lastGenerated) {
-      setLastGenerated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      const now = new Date();
+      setLastGenerated(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      setGeneratedDate(now);
     }
   }, []);
 
@@ -129,7 +138,7 @@ export default function ActionBriefView({
     setPdfStatus("idle");
     setTimeout(() => {
       try {
-        downloadActionBriefPdf(displayBrief, isDemoActive, budgetLimit, lastGenerated);
+        downloadActionBriefPdf(displayBrief, isDemoActive, budgetLimit, lastGenerated, generatedDate);
         setDownloading(false);
         setPdfStatus("success");
         setTimeout(() => setPdfStatus("idle"), 4000);
@@ -222,6 +231,18 @@ export default function ActionBriefView({
 
   const displayBrief = isDemoActive ? getDynamicDemoBrief(selectedFocusArea || "balanced") : (brief || defaultBrief);
 
+  const dateObj = generatedDate || new Date();
+  const monthStr = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const dayStr = String(dateObj.getDate()).padStart(2, "0");
+  const formattedDateString = dateObj.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+  const docNo = isDemoActive
+    ? `AB-2026-JAWA-${monthStr}-${dayStr}`
+    : `AD-CAB-2026-${monthStr}-${dayStr}`;
+
   // Render 3 representative personas as authors/key stakeholders for people visuals
   const briefingStakeholders = [
     PERSONAS[5], // Bu Maya
@@ -265,7 +286,7 @@ export default function ActionBriefView({
           <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed">
             <p className="font-bold mb-0.5">Judge Demo Walkthrough: Step 6 of 6 (Community Action Brief)</p>
-            <p>Congratulations, you have completed the end-to-end decision workflow! Under active demo mode, a customized, stakeholder-ready briefing document has been compiled for the <strong>"East Java Community Study Group Clusters"</strong> (Document No: <strong>"AB-2026-JAWA-01"</strong>). It outlines direct summary of risks for Ayu, Yosep, Dinda, and Rafi, lists our chosen interventions, and details tactical action plans (recruiting co-mentors, printed kits procurement). Click <strong>"Reset Walkthrough"</strong> at the bottom of the page to start over or explore other areas of AjarDaya.</p>
+            <p>Congratulations, you have completed the end-to-end decision workflow! Under active demo mode, a customized, stakeholder-ready briefing document has been compiled for the <strong>"East Java Community Study Group Clusters"</strong> (Document No: <strong>"{docNo}"</strong>). It outlines direct summary of risks for Ayu, Yosep, Dinda, and Rafi, lists our chosen interventions, and details tactical action plans (recruiting co-mentors, printed kits procurement). Click <strong>"Reset Walkthrough"</strong> at the bottom of the page to start over or explore other areas of AjarDaya.</p>
           </div>
         </div>
       )}
@@ -424,7 +445,7 @@ export default function ActionBriefView({
               {isDemoActive ? "EAST JAVA COMMUNITY STUDY GROUP CLUSTERS" : "COMMUNITY ACTION BRIEF"}
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Document No: {isDemoActive ? "AB-2026-JAVA-01" : "AD/CAB/2026/06-29"} • Date: June 29, 2026
+              Document No: {docNo} • Date: {formattedDateString}
             </p>
           </div>
           
