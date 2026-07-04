@@ -179,6 +179,20 @@ export default function CommandCenter({ onNavigate, isDemoActive = false }: Comm
 
   const linePath = points.map((p, idx) => `${idx === 0 ? "M" : "L"} ${p.x},${p.y}`).join(" ");
 
+  const getSeverityRank = (severity: string): number => {
+    switch (severity?.toLowerCase()) {
+      case "critical": return 4;
+      case "high": return 3;
+      case "medium": return 2;
+      case "low": return 1;
+      default: return 0;
+    }
+  };
+
+  const sortedAlerts = [...displayAlerts].sort((a, b) => {
+    return getSeverityRank(b.severity) - getSeverityRank(a.severity);
+  });
+
   return (
     <div id="command-center-container" className="space-y-6 text-left">
       
@@ -390,19 +404,19 @@ export default function CommandCenter({ onNavigate, isDemoActive = false }: Comm
         </div>
 
         <div className="space-y-4">
-          {displayAlerts.map((alert) => (
+          {sortedAlerts.map((alert) => (
             <div
               key={alert.id}
               id={`alert-card-${alert.id}`}
               className={`border rounded-xl p-4 transition-all hover:shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-left ${
-                alert.severity === "high"
+                (alert.severity as string) === "high" || (alert.severity as string) === "critical"
                   ? "border-rose-200 bg-rose-50/10"
                   : "border-amber-200 bg-amber-50/10"
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${
-                  alert.severity === "high" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                  (alert.severity as string) === "high" || (alert.severity as string) === "critical" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
                 }`}>
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 </div>
@@ -410,7 +424,7 @@ export default function CommandCenter({ onNavigate, isDemoActive = false }: Comm
                   <div className="flex items-center gap-2">
                     <span className="font-display font-bold text-sm text-slate-800">{alert.title}</span>
                     <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-bold ${
-                      alert.severity === "high" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                      (alert.severity as string) === "high" || (alert.severity as string) === "critical" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
                     }`}>
                       {alert.severity}
                     </span>

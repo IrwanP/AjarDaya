@@ -42,7 +42,7 @@ export default function MapIndonesia() {
           
           {/* Elegant Floating Selected Region Label */}
           {selectedRegion && (
-            <div className="absolute top-3 left-3 bg-slate-900/90 text-white rounded-lg px-2.5 py-1.5 shadow-sm flex items-center gap-2 text-[11px] font-medium z-20 border border-slate-800 backdrop-blur-sm transition-all duration-300">
+            <div className="absolute top-3 right-3 bg-slate-900/90 text-white rounded-lg px-2.5 py-1.5 shadow-sm flex items-center gap-2 text-[11px] font-medium z-20 border border-slate-800 backdrop-blur-sm transition-all duration-300">
               <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0"></span>
               <span className="font-semibold text-slate-100">{activeRegionInfo.name} — <span className="text-teal-300 font-mono font-bold">{activeRegionInfo.count} communities</span></span>
             </div>
