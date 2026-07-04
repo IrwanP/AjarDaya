@@ -11,23 +11,38 @@ interface ActionBriefViewProps {
   onNavigate?: (viewId: string) => void;
   onResetDemo?: () => void;
   hasApiKey?: boolean;
+  selectedBudget?: number;
+  selectedFocusArea?: "balanced" | "remote3t" | "mentorCapacity";
 }
 
 export default function ActionBriefView({ 
   isDemoActive = false, 
   onNavigate, 
   onResetDemo,
-  hasApiKey = false 
+  hasApiKey = false,
+  selectedBudget,
+  selectedFocusArea
 }: ActionBriefViewProps) {
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([
     "Improve numeracy in Grade 7",
     "Expand tutoring in Papua highlands",
     "Strengthening attendance in Maluku"
   ]);
-  const [budgetLimit, setBudgetLimit] = useState<string>("Rp 2.500.000.000");
+  const [budgetLimit, setBudgetLimit] = useState<string>(() => {
+    if (selectedBudget !== undefined) {
+      return `Rp ${selectedBudget.toLocaleString("id-ID")}`;
+    }
+    return "Rp 2.500.000.000";
+  });
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingText, setLoadingText] = useState<string>("Gemini is formulating custom action strategies...");
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedBudget !== undefined) {
+      setBudgetLimit(`Rp ${selectedBudget.toLocaleString("id-ID")}`);
+    }
+  }, [selectedBudget]);
   const [brief, setBrief] = useState<ActionBrief | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<boolean>(false);
@@ -160,41 +175,52 @@ export default function ActionBriefView({
     ]
   };
 
-  const demoBrief: ActionBrief = {
-    executiveSummary: "This Community Action Brief coordinates the strategic enablement roadmap for the East Java Community Study Group Clusters. Following detailed data analysis, the primary interventions prioritized are 'Community Mentoring Circles' (60% budget share) to scale peer leadership and 'Offline Study Kit Delivery' (40% budget share) to bridge high digital-access divides. This blueprint establishes localized, community-led learning solutions.",
-    keyInsights: [
-      "Digital Access Gap (82%): Ayu Lestari faces high internet instability in Banyuwangi, and Dinda has no personal learning device.",
-      "Mentor Availability Gap (75%): Kak Nisa is currently overextended coordinating 3 separate villages with a high student ratio of 1:40.",
-      "Geographical & Isolation Risks: Yosep Wenda is isolated in a remote area and Rafi Pratama has irregular attendance due to agriculture demands."
-    ],
-    topPriorities: [
-      "Scale mentor capacity by recruiting 4 local volunteer co-mentors to assist Kak Nisa's circles.",
-      "Procure and distribute offline printed study kits to all 47 active learners to bypass internet barriers.",
-      "Establish 4 weekly local mentoring circles in Banyuwangi, Jember, and Malang."
-    ],
-    recommendedActions: [
-      "Procurement and shipment of durable printed study kits & offline books directly to Banyuwangi hubs.",
-      "Onboard 4 assistant community mentors and establish the peer feedback loop for Ayu, Rafi, and Dinda.",
-      "Launch weekly mentoring circle programs led by Kak Nisa with sub-district school board coordination."
-    ],
-    projectedImpact: {
-      learnerReach: "47 active vulnerable learners in East Java fully reached",
-      literacyNumeracyGain: "Projected 32% increase in module completion rates",
-      sustainability: "Established self-sufficient study clusters with local facilitators within 90 days"
-    },
-    timeline30_60_90: {
-      day30: "Recruit and train the 4 volunteer co-mentors. Print and package 50 complete sets of offline study books.",
-      day60: "Distribute offline study kits to Ayu, Rafi, Dinda, and Yosep. Launch the 4 weekly local mentoring circles.",
-      day90: "Monitor attendance lifts (projected +45%) and secure secondary local village funding for long-term mentor incentives."
-    },
-    stakeholderSharingChecklist: [
-      "Submit official Action Brief to East Java District Education Office",
-      "Share localized learning schedules on Banyuwangi community boards",
-      "Upload funding and resource distribution charts to NGO sponsor database"
-    ]
+  const getDynamicDemoBrief = (focus: "balanced" | "remote3t" | "mentorCapacity"): ActionBrief => {
+    let executiveSummary = "";
+    if (focus === "balanced") {
+      executiveSummary = "This Community Action Brief coordinates the strategic enablement roadmap for the East Java Community Study Group Clusters. Following detailed data analysis, the primary interventions prioritized are 'Community Mentoring Circles' (50% budget share) to scale peer leadership and 'Offline Study Kit Delivery' (50% budget share) to bridge high digital-access divides. This blueprint establishes localized, community-led learning solutions.";
+    } else if (focus === "remote3t") {
+      executiveSummary = "This Community Action Brief coordinates the strategic enablement roadmap for the East Java Community Study Group Clusters. Following detailed data analysis, the primary interventions prioritized are 'Offline Study Kit Delivery' (65% budget share) to prioritize offline access in remote underserved pockets, and 'Community Mentoring Circles' (35% budget share) to scale peer leadership. This blueprint establishes localized, community-led learning solutions.";
+    } else {
+      executiveSummary = "This Community Action Brief coordinates the strategic enablement roadmap for the East Java Community Study Group Clusters. Following detailed data analysis, the primary interventions prioritized are 'Community Mentoring Circles' (70% budget share) to heavily invest in educator coaching/mentorship capacity, and 'Offline Study Kit Delivery' (30% budget share) to support learning access. This blueprint establishes localized, community-led learning solutions.";
+    }
+
+    return {
+      executiveSummary,
+      keyInsights: [
+        "Digital Access Gap (82%): Ayu Lestari faces high internet instability in Banyuwangi, and Dinda has no personal learning device.",
+        "Mentor Availability Gap (75%): Kak Nisa is currently overextended coordinating 3 separate villages with a high student ratio of 1:40.",
+        "Geographical & Isolation Risks: Yosep Wenda is isolated in a remote area and Rafi Pratama has irregular attendance due to agriculture demands."
+      ],
+      topPriorities: [
+        "Scale mentor capacity by recruiting local volunteer co-mentors to assist Kak Nisa's circles.",
+        "Procure and distribute offline printed study kits to active learners to bypass internet barriers.",
+        "Establish weekly local mentoring circles in Banyuwangi, Jember, and Malang."
+      ],
+      recommendedActions: [
+        "Procurement and shipment of durable printed study kits & offline books directly to Banyuwangi hubs.",
+        "Onboard assistant community mentors and establish the peer feedback loop for Ayu, Rafi, and Dinda.",
+        "Launch weekly mentoring circle programs led by Kak Nisa with sub-district school board coordination."
+      ],
+      projectedImpact: {
+        learnerReach: "47 active vulnerable learners in East Java fully reached",
+        literacyNumeracyGain: "Projected 32% increase in module completion rates",
+        sustainability: "Established self-sufficient study clusters with local facilitators within 90 days"
+      },
+      timeline30_60_90: {
+        day30: "Recruit and train volunteer co-mentors. Print and package complete sets of offline study books.",
+        day60: "Distribute offline study kits to Ayu, Rafi, Dinda, and Yosep. Launch weekly local mentoring circles.",
+        day90: "Monitor attendance lifts (projected +45%) and secure secondary local village funding for long-term mentor incentives."
+      },
+      stakeholderSharingChecklist: [
+        "Submit official Action Brief to East Java District Education Office",
+        "Share localized learning schedules on Banyuwangi community boards",
+        "Upload funding and resource distribution charts to NGO sponsor database"
+      ]
+    };
   };
 
-  const displayBrief = isDemoActive ? demoBrief : (brief || defaultBrief);
+  const displayBrief = isDemoActive ? getDynamicDemoBrief(selectedFocusArea || "balanced") : (brief || defaultBrief);
 
   // Render 3 representative personas as authors/key stakeholders for people visuals
   const briefingStakeholders = [

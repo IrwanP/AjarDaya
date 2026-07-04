@@ -8,15 +8,29 @@ interface ResourcePlannerProps {
   isDemoActive?: boolean;
   onNavigate?: (viewId: string) => void;
   hasApiKey?: boolean;
+  selectedBudget?: number;
+  setSelectedBudget?: (b: number) => void;
+  selectedFocusArea?: "balanced" | "remote3t" | "mentorCapacity";
+  setSelectedFocusArea?: (f: "balanced" | "remote3t" | "mentorCapacity") => void;
 }
 
 export default function ResourcePlanner({ 
   isDemoActive = false, 
   onNavigate,
-  hasApiKey = false 
+  hasApiKey = false,
+  selectedBudget,
+  setSelectedBudget,
+  selectedFocusArea,
+  setSelectedFocusArea
 }: ResourcePlannerProps) {
-  const [budgetInput, setBudgetInput] = useState<number>(2500000000); // 2.5 Billion IDR default
-  const [selectedFocusArea, setSelectedFocusArea] = useState<"balanced" | "remote3t" | "mentorCapacity">("balanced");
+  const [localBudgetInput, setLocalBudgetInput] = useState<number>(2500000000); // 2.5 Billion IDR default
+  const budgetInput = selectedBudget !== undefined ? selectedBudget : localBudgetInput;
+  const setBudgetInput = setSelectedBudget || setLocalBudgetInput;
+
+  const [localSelectedFocusArea, setLocalSelectedFocusArea] = useState<"balanced" | "remote3t" | "mentorCapacity">("balanced");
+  const activeFocusArea = selectedFocusArea !== undefined ? selectedFocusArea : localSelectedFocusArea;
+  const changeSelectedFocusArea = setSelectedFocusArea || setLocalSelectedFocusArea;
+
   const [focusArea, setFocusArea] = useState<string>("Balanced Enablement");
   const [loading, setLoading] = useState<boolean>(false);
   const [allocation, setAllocation] = useState<ResourceAllocation | null>(null);
@@ -174,6 +188,10 @@ export default function ResourcePlanner({
   };
 
   useEffect(() => {
+    setFocusArea(getFriendlyFocusAreaName(activeFocusArea));
+  }, [activeFocusArea]);
+
+  useEffect(() => {
     const cacheKey = `resource:${budgetInput}:${focusArea}`;
     if (hasGeminiCache(cacheKey)) {
       setAllocation(getGeminiCache(cacheKey));
@@ -184,7 +202,7 @@ export default function ResourcePlanner({
     }
   }, [focusArea, budgetInput]);
 
-  const activeLocalAllocation = getAllocationData(selectedFocusArea, budgetInput);
+  const activeLocalAllocation = getAllocationData(activeFocusArea, budgetInput);
 
   const displayRecommended = isDemoActive 
     ? activeLocalAllocation.recommendedAllocation 
@@ -300,11 +318,11 @@ export default function ResourcePlanner({
                   key={opt.id}
                   id={`focus-option-${opt.id}`}
                   onClick={() => {
-                    setSelectedFocusArea(opt.id as any);
+                    changeSelectedFocusArea(opt.id as any);
                     setFocusArea(getFriendlyFocusAreaName(opt.id as any));
                   }}
                   className={`border rounded-xl p-3.5 cursor-pointer transition-all text-left hover:border-teal-400 hover:bg-slate-50/50 ${
-                    selectedFocusArea === opt.id
+                    activeFocusArea === opt.id
                       ? "border-teal-500 bg-teal-50/30 shadow-xs ring-1 ring-teal-500/20"
                       : "border-slate-200 bg-white"
                   }`}

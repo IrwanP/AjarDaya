@@ -38,6 +38,41 @@ export default function App() {
   const [selectedSupportGapFilter, setSelectedSupportGapFilter] = useState<string | null>(null);
   const [highlightedLearnerName, setHighlightedLearnerName] = useState<string | null>(null);
 
+  // Shared budget and focus area states for Resource Planner and Action Brief
+  const [selectedBudget, setSelectedBudget] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("selectedBudget");
+      return saved ? parseInt(saved, 10) : 2500000000;
+    } catch (e) {
+      return 2500000000;
+    }
+  });
+
+  const [selectedFocusArea, setSelectedFocusArea] = useState<"balanced" | "remote3t" | "mentorCapacity">(() => {
+    try {
+      const saved = localStorage.getItem("selectedFocusArea");
+      return (saved as any) || "balanced";
+    } catch (e) {
+      return "balanced";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("selectedBudget", selectedBudget.toString());
+    } catch (e) {
+      // Fail-safe
+    }
+  }, [selectedBudget]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("selectedFocusArea", selectedFocusArea);
+    } catch (e) {
+      // Fail-safe
+    }
+  }, [selectedFocusArea]);
+
   // Check backend server connection and API Key status on load
   useEffect(() => {
     const checkHealth = async () => {
@@ -134,6 +169,10 @@ export default function App() {
           <ResourcePlanner 
             isDemoActive={isDemoActive}
             onNavigate={(id) => setActiveView(id)}
+            selectedBudget={selectedBudget}
+            setSelectedBudget={setSelectedBudget}
+            selectedFocusArea={selectedFocusArea}
+            setSelectedFocusArea={setSelectedFocusArea}
           />
         );
       case "action_brief":
@@ -146,6 +185,8 @@ export default function App() {
               setActiveView("landing");
             }}
             hasApiKey={hasApiKey}
+            selectedBudget={selectedBudget}
+            selectedFocusArea={selectedFocusArea}
           />
         );
       default:
