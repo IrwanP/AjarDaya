@@ -28,22 +28,29 @@ const getTraceabilityData = (group: string, domain: string) => {
     return {
       learners: [
         {
-          name: "Ayu Lestari",
-          status: "At Risk",
-          shortSignal: "limited internet + device access",
-          signals: ["limited internet access", "limited device access"],
+          name: "Maria Lewaherilla",
+          status: "Behind",
+          shortSignal: "frequent power outages + limited offline resources",
+          signals: ["frequent power outages", "limited offline resources"],
           relatedGap: "Digital Access"
         },
         {
           name: "Dinda Rahmawati",
           status: "At Risk",
-          shortSignal: "no personal device",
-          signals: ["no personal device", "difficulty completing digital assignments"],
+          shortSignal: "no personal device + weak internet coverage",
+          signals: ["no personal device", "weak internet coverage", "difficulty completing digital assignments"],
+          relatedGap: "Digital Access"
+        },
+        {
+          name: "Ayu Lestari",
+          status: "At Risk",
+          shortSignal: "limited internet + shared device access",
+          signals: ["limited internet access", "shared device access"],
           relatedGap: "Digital Access"
         }
       ],
       trace: {
-        signal: "Ayu + Dinda device access signals",
+        signal: "Maria + Dinda + Ayu device access signals",
         gap: "Digital Access Gap",
         recommendedAction: "Digital learning kits + offline learning resources"
       },
@@ -119,22 +126,29 @@ const getTraceabilityData = (group: string, domain: string) => {
     return {
       learners: [
         {
-          name: "Ayu Lestari",
-          status: "At Risk",
-          shortSignal: "limited internet + device access",
-          signals: ["limited internet access", "limited device access"],
+          name: "Maria Lewaherilla",
+          status: "Behind",
+          shortSignal: "frequent power outages + limited offline resources",
+          signals: ["frequent power outages", "limited offline resources"],
           relatedGap: domain
         },
         {
           name: "Dinda Rahmawati",
           status: "At Risk",
-          shortSignal: "no personal device",
-          signals: ["no personal device", "difficulty completing digital assignments"],
+          shortSignal: "no personal device + weak internet coverage",
+          signals: ["no personal device", "weak internet coverage", "difficulty completing digital assignments"],
+          relatedGap: domain
+        },
+        {
+          name: "Ayu Lestari",
+          status: "At Risk",
+          shortSignal: "limited internet + shared device access",
+          signals: ["limited internet access", "shared device access"],
           relatedGap: domain
         }
       ],
       trace: {
-        signal: "Ayu + Dinda limited family income barriers",
+        signal: "Maria + Dinda + Ayu family income barriers",
         gap: `${domain} Gap`,
         recommendedAction: "Subsidize student study packages and mentorship"
       },
@@ -255,11 +269,11 @@ export default function EquitySupportGaps({
         supportDomain: "Digital access",
         severity: "High Gap",
         gapIndex: 0.72,
-        whatTheGapIs: "Low-income learners such as Ayu Lestari and Dinda Rahmawati face limited internet connectivity and insufficient access to personal learning devices, making digital participation inconsistent.",
+        whatTheGapIs: "Low-income learners such as Maria Lewaherilla and Dinda Rahmawati face frequent power outages, lack of personal devices, and weak internet coverage, making consistent digital participation impossible without offline kits.",
         whyItMatters: "When learners cannot reliably access digital content, they fall behind in assignments, lose continuity in learning routines, and become less prepared to participate in structured academic support.",
         recommendedAction: "Prioritize digital learning kits and offline learning resources, supported by mentor follow-up to keep learners engaged.",
-        evidenceSignals: ["limited internet access", "limited device access"],
-        affectedLearners: ["Ayu Lestari", "Dinda Rahmawati"],
+        evidenceSignals: ["frequent power outages", "no personal device", "weak internet coverage"],
+        affectedLearners: ["Maria Lewaherilla", "Dinda Rahmawati", "Ayu Lestari"],
         confidenceNote: "Insight aligned using structured demo evidence."
       };
     }

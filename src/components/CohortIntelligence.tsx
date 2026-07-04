@@ -260,6 +260,23 @@ export default function CohortIntelligence({
     { name: "Yosep Wenda", region: "Papua", progress: "15%", status: "Behind", blocker: "Language barrier and limited structured mentorship" }
   ];
 
+  const statusPriority: Record<string, number> = {
+    "Behind": 1,
+    "At Risk": 2,
+    "On Track": 3
+  };
+
+  const sortedCohortTableData = [...cohortTableData].sort((a, b) => {
+    const priorityA = statusPriority[a.status] ?? 4;
+    const priorityB = statusPriority[b.status] ?? 4;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+    const valA = parseInt(a.progress.replace("%", ""), 10) || 0;
+    const valB = parseInt(b.progress.replace("%", ""), 10) || 0;
+    return valA - valB;
+  });
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "On Track":
@@ -542,7 +559,7 @@ export default function CohortIntelligence({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {cohortTableData
+              {sortedCohortTableData
                 .map((row) => {
                   const isExpanded = expandedStudent === row.name;
                   const persona = PERSONAS.find(p => p.name === row.name);
