@@ -130,90 +130,7 @@ export default function CohortIntelligence({
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<CohortIntelligenceData | null>(null);
   const [quotaStatus, setQuotaStatus] = useState<"live" | "cached" | "fallback" | null>(null);
-
-  // Cohort numbers customized loosely by Grade levels for high fidelity simulation
-  const getCohortMetrics = (grade: string) => {
-    if (isDemoActive) {
-      return { onTrack: 58, atRisk: 31, behind: 21, notStarted: 14 };
-    }
-    if (grade.includes("Early")) {
-      return { onTrack: 58, atRisk: 24, behind: 14, notStarted: 4 };
-    } else if (grade.includes("4-6")) {
-      return { onTrack: 65, atRisk: 18, behind: 12, notStarted: 5 };
-    } else if (grade.includes("SMP")) {
-      return { onTrack: 62, atRisk: 21, behind: 11, notStarted: 6 };
-    } else {
-      return { onTrack: 71, atRisk: 15, behind: 10, notStarted: 4 };
-    }
-  };
-
-  const metrics = getCohortMetrics(selectedGrade);
-
-  const fetchCohortNBA = async () => {
-    const cacheKey = `cohort-actions:${selectedGrade}:${selectedRegion}`;
-
-    if (hasGeminiCache(cacheKey)) {
-      setData(getGeminiCache(cacheKey));
-      setQuotaStatus("cached");
-      return;
-    }
-
-    setLoading(true);
-    setQuotaStatus(null);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 13000); // 13-second timeout
-
-    try {
-      const res = await fetch("/api/gemini/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          topic: "cohort_actions",
-          data: {
-            grade: selectedGrade,
-            region: selectedRegion,
-            onTrack: metrics.onTrack,
-            atRisk: metrics.atRisk,
-            behind: metrics.behind,
-            notStarted: metrics.notStarted
-          }
-        })
-      });
-      clearTimeout(timeoutId);
-
-      const resData = await res.json();
-      if (resData && resData.data) {
-        setData(resData.data);
-        setGeminiCache(cacheKey, resData.data);
-        if (resData.source === "local_intelligence_fallback_cached" || resData.source?.includes("fallback") || resData.source?.includes("local")) {
-          setQuotaStatus("fallback");
-        } else {
-          setQuotaStatus("live");
-        }
-      } else {
-        setQuotaStatus("fallback");
-      }
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error("Error fetching cohort NBA:", err);
-      setQuotaStatus("fallback");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const cacheKey = `cohort-actions:${selectedGrade}:${selectedRegion}`;
-    if (hasGeminiCache(cacheKey)) {
-      setData(getGeminiCache(cacheKey));
-      setQuotaStatus("cached");
-    } else {
-      setData(null);
-      setQuotaStatus("fallback");
-    }
-  }, [selectedGrade, selectedRegion]);
+  const [error, setError] = useState<string | null>(null);
 
   // Premium fallbacks
   const defaultNBA: CohortNBA[] = [
@@ -246,6 +163,139 @@ export default function CohortIntelligence({
     "Language of instruction (formal Indonesian) not fully mastered by children in remote Papua",
     "Domestic duties such as helping harvest fields or caring for younger siblings while parents work"
   ];
+
+  // Cohort numbers customized loosely by Grade levels for high fidelity simulation
+  const getCohortMetrics = (grade: string) => {
+    if (isDemoActive) {
+      return { onTrack: 58, atRisk: 31, behind: 21, notStarted: 14 };
+    }
+    if (grade.includes("Early")) {
+      return { onTrack: 58, atRisk: 24, behind: 14, notStarted: 4 };
+    } else if (grade.includes("4-6")) {
+      return { onTrack: 65, atRisk: 18, behind: 12, notStarted: 5 };
+    } else if (grade.includes("SMP")) {
+      return { onTrack: 62, atRisk: 21, behind: 11, notStarted: 6 };
+    } else {
+      return { onTrack: 71, atRisk: 15, behind: 10, notStarted: 4 };
+    }
+  };
+
+  const metrics = getCohortMetrics(selectedGrade);
+
+  const fetchCohortNBA = async () => {
+    const cacheKey = `cohort-actions:${selectedGrade}:${selectedRegion}`;
+    setError(null);
+    setLoading(true);
+    setQuotaStatus(null);
+
+    // If walkthrough demo or quota-safe mode is active, do not trigger any live server calls
+    if (isDemoActive) {
+      // Simulate standard calculation processing delay (800ms)
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const demoData = {
+        nba: [
+          {
+            targetCohort: "Behind Learners (12%)",
+            actionTitle: "Structured Remedial Support & Offline Study Kits",
+            impactDescription: "Prioritize offline printed modules and 1-on-1 tutoring sessions for Yosep Wenda (Papua) and Maria Lewaherilla (Maluku) to bridge literacy and basic numeracy gaps.",
+            primaryOwner: "Bu Maya (School Counselor) & Pak Budi",
+            priority: "Critical"
+          },
+          {
+            targetCohort: "At-Risk Learners (22%)",
+            actionTitle: "Activate Peer-to-Peer Learning Circles (Peer Circles)",
+            impactDescription: "Grouping at-risk students (like Ayu Lestari, Rafi Pratama, Dinda Rahmawati) with peer mentors improves assignment completion by 25% and reduces learning anxiety.",
+            primaryOwner: "Kak Nisa (Community Mentor)",
+            priority: "High"
+          },
+          {
+            targetCohort: "On-Track Learners (62%)",
+            actionTitle: "Offer Local Creative Project Challenges",
+            impactDescription: "Students who are already on-track are given self-paced project-based learning modules to solve village challenges and build leadership.",
+            primaryOwner: "Pak Arif (NGO Program Manager)",
+            priority: "Medium"
+          }
+        ],
+        regionalTrend: `The progress trend for ${selectedGrade} in ${selectedRegion} indicates that in-person community study circles at village halls achieve more stable outcomes compared to independent mobile learning in weak cellular coverage areas.`,
+        topBlockers: [
+          "Lack of personal devices for night study (students sharing phones with parents)",
+          "Language of instruction (formal Indonesian) not fully mastered by children in remote Papua",
+          "Domestic duties such as helping harvest fields or caring for younger siblings while parents work"
+        ]
+      };
+      setData(demoData);
+      setGeminiCache(cacheKey, demoData);
+      setQuotaStatus("fallback");
+      setLoading(false);
+      return;
+    }
+
+    if (hasGeminiCache(cacheKey)) {
+      setData(getGeminiCache(cacheKey));
+      setQuotaStatus("cached");
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 13000); // 13-second timeout
+
+    try {
+      const res = await fetch("/api/gemini/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          topic: "cohort_actions",
+          data: {
+            grade: selectedGrade,
+            region: selectedRegion,
+            onTrack: metrics.onTrack,
+            atRisk: metrics.atRisk,
+            behind: metrics.behind,
+            notStarted: metrics.notStarted
+          }
+        })
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`API returned status ${res.status}`);
+      }
+
+      const resData = await res.json();
+      if (resData && resData.data) {
+        setData(resData.data);
+        setGeminiCache(cacheKey, resData.data);
+        if (resData.source === "local_intelligence_fallback_cached" || resData.source?.includes("fallback") || resData.source?.includes("local")) {
+          setQuotaStatus("fallback");
+        } else {
+          setQuotaStatus("live");
+        }
+      } else {
+        setQuotaStatus("fallback");
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error("Error fetching cohort NBA:", err);
+      setError(err?.message || "Failed to run AI analysis. Please try again.");
+      setQuotaStatus("fallback");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const cacheKey = `cohort-actions:${selectedGrade}:${selectedRegion}`;
+    setError(null);
+    if (hasGeminiCache(cacheKey)) {
+      setData(getGeminiCache(cacheKey));
+      setQuotaStatus("cached");
+    } else {
+      setData(null);
+      setQuotaStatus("fallback");
+    }
+  }, [selectedGrade, selectedRegion]);
 
   const displayNBA = data?.nba || defaultNBA;
   const displayTrend = data?.regionalTrend || defaultTrend;
@@ -417,7 +467,7 @@ export default function CohortIntelligence({
         <div className="lg:col-span-8 space-y-6">
           
           <div id="ai-nba-panel" className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative overflow-hidden hover:border-slate-300 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50/50 rounded-full blur-2xl"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50/50 rounded-full blur-2xl pointer-events-none"></div>
             
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
               <div className="flex items-center gap-2">
@@ -445,14 +495,15 @@ export default function CohortIntelligence({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={fetchCohortNBA}
                 disabled={loading}
-                className="px-2.5 py-1.5 bg-gradient-to-r from-teal-500 to-indigo-600 text-white font-extrabold text-[10px] sm:text-xs rounded-lg flex items-center justify-center gap-1 transition-all shadow-xs hover:shadow-md disabled:opacity-50 cursor-pointer shrink-0"
+                className="px-3 py-2 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 active:scale-95 text-white font-extrabold text-[10px] sm:text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md disabled:opacity-50 cursor-pointer shrink-0"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Analyzing...</span>
+                    <span>Running Analysis...</span>
                   </>
                 ) : (
                   <>
@@ -462,6 +513,13 @@ export default function CohortIntelligence({
                 )}
               </button>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 p-3.5 rounded-xl mb-5 leading-relaxed italic">
               "<strong>Trend Analysis:</strong> {displayTrend}"

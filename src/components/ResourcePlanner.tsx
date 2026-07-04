@@ -16,12 +16,88 @@ export default function ResourcePlanner({
   hasApiKey = false 
 }: ResourcePlannerProps) {
   const [budgetInput, setBudgetInput] = useState<number>(2500000000); // 2.5 Billion IDR default
+  const [selectedFocusArea, setSelectedFocusArea] = useState<"balanced" | "remote3t" | "mentorCapacity">("balanced");
   const [focusArea, setFocusArea] = useState<string>("Balanced Enablement");
   const [loading, setLoading] = useState<boolean>(false);
   const [allocation, setAllocation] = useState<ResourceAllocation | null>(null);
   const [quotaStatus, setQuotaStatus] = useState<"live" | "cached" | "fallback" | null>(null);
   const [lastOptimized, setLastOptimized] = useState<string | null>(null);
   const [highlightRefreshed, setHighlightRefreshed] = useState<boolean>(false);
+
+  const getFriendlyFocusAreaName = (focus: "balanced" | "remote3t" | "mentorCapacity"): string => {
+    switch (focus) {
+      case "balanced": return "Balanced Enablement";
+      case "remote3t": return "3T Accessibility Emphasis";
+      case "mentorCapacity": return "Teacher & Mentor Capacity";
+    }
+  };
+
+  interface FocusAllocation {
+    recommendedAllocation: Array<{ area: string; percentage: number; amountIdr: string }>;
+    regionalDistribution: Array<{ region: string; percentage: number; justification: string }>;
+    justification: string;
+    impactScore: number;
+    projectedOutcomes: string[];
+  }
+
+  const getAllocationData = (focus: "balanced" | "remote3t" | "mentorCapacity", budget: number): FocusAllocation => {
+    switch (focus) {
+      case "balanced":
+        return {
+          recommendedAllocation: [
+            { area: "Community Mentoring Circles", percentage: 50, amountIdr: `Rp ${(budget * 0.50).toLocaleString("id-ID")}` },
+            { area: "Offline Study Kit Delivery", percentage: 50, amountIdr: `Rp ${(budget * 0.50).toLocaleString("id-ID")}` }
+          ],
+          regionalDistribution: [
+            { region: "East Java Community Study Group Clusters", percentage: 60, justification: "Balanced funding for local study spaces and material delivery in Banyuwangi." },
+            { region: "Maluku Islands & Papua (3T Pockets)", percentage: 40, justification: "Ensures Maria and Yosep's circles are sustained alongside local Java hubs." }
+          ],
+          justification: "Balanced enablement distributes resources evenly between learner access support and mentor/community facilitation. This ensures both physical resources and human guidance are scaled hand-in-hand.",
+          impactScore: 94,
+          projectedOutcomes: [
+            "Learners receive both offline materials and mentor support.",
+            "Communities maintain balanced progress across access and guidance gaps.",
+            "Kak Nisa's coordination load is reduced from 1:40 to a sustainable 1:20 with assistant facilitators."
+          ]
+        };
+      case "remote3t":
+        return {
+          recommendedAllocation: [
+            { area: "Offline Study Kit Delivery", percentage: 65, amountIdr: `Rp ${(budget * 0.65).toLocaleString("id-ID")}` },
+            { area: "Community Mentoring Circles", percentage: 35, amountIdr: `Rp ${(budget * 0.35).toLocaleString("id-ID")}` }
+          ],
+          regionalDistribution: [
+            { region: "Maluku Islands & Papua (3T Communities)", percentage: 70, justification: "Heavy material and infrastructure injection for extreme access bottlenecks faced by Maria and Yosep." },
+            { region: "East Java Disadvantaged Pockets", percentage: 30, justification: "Directed towards Ayu and Dinda's low-connectivity villages." }
+          ],
+          justification: "Remote and underserved areas need stronger offline study access because connectivity and infrastructure barriers are the main bottlenecks. This focuses resources on printed materials and localized kits.",
+          impactScore: 97,
+          projectedOutcomes: [
+            "More learners in remote areas receive printed modules and offline learning kits.",
+            "Access gaps are reduced for learners with limited internet or devices.",
+            "Maria and Yosep's remote cohorts receive solar-powered learning boxes to bypass grid outages."
+          ]
+        };
+      case "mentorCapacity":
+        return {
+          recommendedAllocation: [
+            { area: "Community Mentoring Circles", percentage: 70, amountIdr: `Rp ${(budget * 0.70).toLocaleString("id-ID")}` },
+            { area: "Offline Study Kit Delivery", percentage: 30, amountIdr: `Rp ${(budget * 0.30).toLocaleString("id-ID")}` }
+          ],
+          regionalDistribution: [
+            { region: "East Java Community Study Group Clusters", percentage: 75, justification: "Supports tutor allowances and intensive mentor coaching led by Kak Nisa." },
+            { region: "West Java & Maluku Mentorship Hubs", percentage: 25, justification: "Direct training and coordination resources to decrease extreme student-mentor ratios." }
+          ],
+          justification: "Teacher and mentor capacity focuses investment on localized coaching, mentor coordination, and learning facilitation. This ensures educators are supported and less overextended.",
+          impactScore: 95,
+          projectedOutcomes: [
+            "Mentor availability improves.",
+            "Community study groups receive more consistent guidance.",
+            "At-risk learners receive closer follow-up."
+          ]
+        };
+    }
+  };
 
   const fetchOptimizations = async () => {
     setLoading(true);
@@ -108,50 +184,27 @@ export default function ResourcePlanner({
     }
   }, [focusArea, budgetInput]);
 
-  // Precomputed beautiful default allocation
-  const defaultRecommended = [
-    { area: "Learning Materials & Printed Modules", percentage: 35, amountIdr: `Rp ${(budgetInput * 0.35).toLocaleString("id-ID")}` },
-    { area: "Teacher & Mentor Capacity Building", percentage: 25, amountIdr: `Rp ${(budgetInput * 0.25).toLocaleString("id-ID")}` },
-    { area: "Offline Digital Kits (AjarBox & Tablets)", percentage: 20, amountIdr: `Rp ${(budgetInput * 0.2).toLocaleString("id-ID")}` },
-    { area: "Village Learning Center Operations", percentage: 15, amountIdr: `Rp ${(budgetInput * 0.15).toLocaleString("id-ID")}` },
-    { area: "Local Mentor Incentives & Appreciation", percentage: 5, amountIdr: `Rp ${(budgetInput * 0.05).toLocaleString("id-ID")}` }
-  ];
+  const activeLocalAllocation = getAllocationData(selectedFocusArea, budgetInput);
 
-  const defaultRegional = [
-    { region: "Southeast Maluku & Papua Highlands (3T)", percentage: 45, justification: "Allocated the largest portion due to critical gaps in internet connectivity and digital devices." },
-    { region: "Rural Jawa (West & East Jawa)", percentage: 30, justification: "Focuses on after-school peer mentorship to lower student drop-out rates." },
-    { region: "Marginal Urban (Disadvantaged Hubs)", percentage: 25, justification: "Focuses on basic literacy and numeracy tutoring for marginalized children in urban centers." }
-  ];
+  const displayRecommended = isDemoActive 
+    ? activeLocalAllocation.recommendedAllocation 
+    : (allocation?.recommendedAllocation || activeLocalAllocation.recommendedAllocation);
 
-  const demoRecommended = [
-    { area: "Community Mentoring Circles", percentage: 60, amountIdr: `Rp ${(budgetInput * 0.60).toLocaleString("id-ID")}` },
-    { area: "Offline Study Kit Delivery", percentage: 40, amountIdr: `Rp ${(budgetInput * 0.40).toLocaleString("id-ID")}` }
-  ];
-
-  const demoRegional = [
-    { region: "East Java Community Study Group Clusters", percentage: 100, justification: "Fully directed towards East Java during active demo trial to support Ayu, Rafi, Dinda, and Yosep." }
-  ];
-
-  const displayRecommended = isDemoActive ? demoRecommended : (allocation?.recommendedAllocation || defaultRecommended);
-  const displayRegional = isDemoActive ? demoRegional : (allocation?.regionalDistribution || defaultRegional);
+  const displayRegional = isDemoActive 
+    ? activeLocalAllocation.regionalDistribution 
+    : (allocation?.regionalDistribution || activeLocalAllocation.regionalDistribution);
   
   const displayJustification = isDemoActive
-    ? "AI Optimization Result: Direct 100% of local cluster resources in East Java to support Community Mentoring Circles (60%) and Offline Study Kits (40%). This matches the simulated impact gains perfectly."
-    : (allocation?.justification || 
-      `This total budget allocation of Rp ${budgetInput.toLocaleString("id-ID")} has been optimized based on documented equity gaps. AI recommends channeling the largest portion to remote 3T areas and non-internet learning resources to maximize learner impact per Rupiah spent.`);
+    ? activeLocalAllocation.justification
+    : (allocation?.justification || activeLocalAllocation.justification);
 
-  const displayScore = isDemoActive ? 96 : (allocation?.impactScore || 92);
+  const displayScore = isDemoActive 
+    ? activeLocalAllocation.impactScore 
+    : (allocation?.impactScore || activeLocalAllocation.impactScore);
+
   const displayOutcomes = isDemoActive
-    ? [
-        "Ayu, Rafi, Dinda, and Yosep are fully supported with localized mentoring circles.",
-        "Kak Nisa's coordination load is reduced from 1:40 to a sustainable 1:10 with new assistant facilitators.",
-        "98% of the East Java community learners gain access to printed modules and high-speed local learning hubs."
-      ]
-    : (allocation?.projectedOutcomes || [
-        "Over 8,500 children on isolated islands gain access to structured, offline-first learning modules.",
-        "350 local community mentors are fully trained to facilitate study circles independently.",
-        "Average learner participation rate increases to 88% within 6 months."
-      ]);
+    ? activeLocalAllocation.projectedOutcomes
+    : (allocation?.projectedOutcomes || activeLocalAllocation.projectedOutcomes);
 
   return (
     <div id="resource-planner-container" className="space-y-6 text-left">
@@ -239,23 +292,26 @@ export default function ResourcePlanner({
             <label className="text-xs font-semibold text-slate-600 uppercase font-mono">Priority Focus Area</label>
             <div className="space-y-2">
               {[
-                { id: "Balanced Enablement", title: "Balanced Enablement", desc: "Evenly distributes resources between physical learning material distribution and educator capacity-building." },
-                { id: "3T Accessibility Emphasis", title: "Remote & Underserved Areas (3T)", desc: "Prioritizes communities in Indonesia’s disadvantaged, frontier, and outermost regions where connectivity, infrastructure, and education services are limited." },
-                { id: "Teacher & Mentor Capacity", title: "Teacher & Mentor Capacity", desc: "Invests heavily in intensive in-person training, coaching sessions, and localized mentor allowances." }
+                { id: "balanced", title: "Balanced Enablement", desc: "Evenly distributes resources between physical learning material distribution and educator capacity-building." },
+                { id: "remote3t", title: "Remote & Underserved Areas (3T)", desc: "Prioritizes communities in Indonesia’s disadvantaged, frontier, and outermost regions where connectivity, infrastructure, and education services are limited." },
+                { id: "mentorCapacity", title: "Teacher & Mentor Capacity", desc: "Invests heavily in intensive in-person training, coaching sessions, and localized mentor allowances." }
               ].map((opt) => (
                 <div
                   key={opt.id}
-                  id={`focus-option-${opt.id.toLowerCase().replace(/\s+/g, '-')}`}
-                  onClick={() => setFocusArea(opt.id)}
-                  className={`border rounded-xl p-3.5 cursor-pointer transition-all text-left ${
-                    focusArea === opt.id
-                      ? "border-teal-500 bg-teal-50/20 shadow-xs"
-                      : "border-slate-200 bg-white hover:border-slate-300"
+                  id={`focus-option-${opt.id}`}
+                  onClick={() => {
+                    setSelectedFocusArea(opt.id as any);
+                    setFocusArea(getFriendlyFocusAreaName(opt.id as any));
+                  }}
+                  className={`border rounded-xl p-3.5 cursor-pointer transition-all text-left hover:border-teal-400 hover:bg-slate-50/50 ${
+                    selectedFocusArea === opt.id
+                      ? "border-teal-500 bg-teal-50/30 shadow-xs ring-1 ring-teal-500/20"
+                      : "border-slate-200 bg-white"
                   }`}
                 >
                   <span className="text-xs font-bold text-slate-800 flex items-center flex-wrap gap-1">
                     {opt.title}
-                    {opt.id === "3T Accessibility Emphasis" && (
+                    {opt.id === "remote3t" && (
                       <span className="relative group inline-flex items-center cursor-help shrink-0">
                         <span className="text-[9px] inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-500 font-bold border border-slate-300 select-none">
                           i
