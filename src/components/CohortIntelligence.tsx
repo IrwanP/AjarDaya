@@ -56,7 +56,7 @@ const isLearnerAffectedByFilter = (learnerName: string, filter: string | null) =
     const [groupPart, domainPart] = normFilter.split("×").map(s => s.trim());
     
     if (groupPart === "low-income learners" && domainPart === "digital access") {
-      return ["Ayu Lestari", "Dinda Rahmawati"].includes(learnerName);
+      return ["Ayu Lestari", "Dinda Rahmawati", "Maria Lewaherilla"].includes(learnerName);
     }
     if (groupPart === "remote islands" && (domainPart === "digital access" || domainPart === "access" || domainPart === "learning resources")) {
       return ["Maria Lewaherilla"].includes(learnerName);
@@ -70,7 +70,7 @@ const isLearnerAffectedByFilter = (learnerName: string, filter: string | null) =
     
     // Fallbacks to handle the category perfectly
     if (groupPart === "low-income learners") {
-      return ["Ayu Lestari", "Dinda Rahmawati"].includes(learnerName);
+      return ["Ayu Lestari", "Dinda Rahmawati", "Maria Lewaherilla"].includes(learnerName);
     }
     if (groupPart === "remote islands") {
       return ["Maria Lewaherilla"].includes(learnerName);
@@ -650,8 +650,12 @@ export default function CohortIntelligence({
                           <div className="flex items-center gap-2">
                             <span className="font-bold">{row.name}</span>
                             {isAffected && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-full text-[9px] font-bold">
-                                Affected Match
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                row.name === "Maria Lewaherilla"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "bg-teal-100 text-teal-800"
+                              }`}>
+                                {row.name === "Maria Lewaherilla" ? "Behind + Access Risk" : "Affected Match"}
                               </span>
                             )}
                             {row.name === highlightedLearnerName && !isAffected && (

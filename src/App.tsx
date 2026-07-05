@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import LandingPage from "./components/LandingPage";
 import CommandCenter from "./components/CommandCenter";
 import CohortIntelligence from "./components/CohortIntelligence";
@@ -31,6 +31,16 @@ export default function App() {
   const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
   const [isDemoActive, setIsDemoActive] = useState<boolean>(false);
+
+  const mainContentRef = useRef<HTMLElement>(null);
+
+  // Scroll main container to top immediately when activeView changes
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo(0, 0);
+    }
+    window.scrollTo(0, 0);
+  }, [activeView]);
 
   // Traceability states to link Support Gap Lens and Cohort Analyzer
   const [selectedGroup, setSelectedGroup] = useState<string>("Low-income learners");
@@ -362,7 +372,7 @@ export default function App() {
         </header>
 
         {/* View render wrapper */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 relative space-y-6">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto p-6 md:p-8 relative space-y-6">
           {isDemoActive && activeView !== "landing" && (
             <WalkthroughStepper activeView={activeView} onNavigate={(id) => setActiveView(id)} />
           )}
